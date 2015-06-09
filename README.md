@@ -1,4 +1,4 @@
-## landsat-meta-downloader
+## landsat-meta-updater
 
 A downloader for landsat metadata with auto update for Elasticsearch or Mongodb.
 
