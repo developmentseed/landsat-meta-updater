@@ -1,0 +1,34 @@
+{
+  "name": "landsat-meta-downloader",
+  "version": "0.1.0",
+  "description": "Downloads landsat metadata and add it to Elastic Search or Mongodb",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/developmentseed/landsat-meta-downloader.git"
+  },
+  "keywords": [
+    "landsat",
+    "elasticsearch",
+    "mongodb",
+    "landsat-api"
+  ],
+  "author": "Development Seed",
+  "license": "CC0-1.0",
+  "bugs": {
+    "url": "https://github.com/developmentseed/landsat-meta-downloader/issues"
+  },
+  "homepage": "https://github.com/developmentseed/landsat-meta-downloader#readme",
+  "dependencies": {
+    "bluebird": "^2.9.27",
+    "csv": "^0.4.4",
+    "elasticsearch": "^4.1.0",
+    "fs-extra": "^0.18.4",
+    "lodash": "^3.9.3",
+    "request": "^2.57.0",
+    "request-progress": "^0.3.1"
+  }
+}
