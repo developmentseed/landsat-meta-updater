@@ -151,7 +151,6 @@ module.exports.toElasticSearch = function (filename, esIndex, esType, bulkSize, 
         // pause until processing is done
 
         rstream.pause();
-        process.stdout.write('Log: processed: ' + total + ' added: ' + added + ' skipped: ' + skipped + '\r');
         csv.parse(line, function (err, data) {
           if (err) {
             return reject(err);
@@ -164,7 +163,6 @@ module.exports.toElasticSearch = function (filename, esIndex, esType, bulkSize, 
               i++;
               rstream.resume();
             } else {
-              total++;
               client.exists({
                 index: esIndex,
                 type: esType,
@@ -202,14 +200,24 @@ module.exports.toElasticSearch = function (filename, esIndex, esType, bulkSize, 
                   }
                 }
               });
-
+              total++;
+              process.stdout.write('Log: processed: ' + total + ' added: ' + added + ' skipped: ' + skipped + '\r');
             }
           });
         });
       });
 
       rstream.on('end', function () {
-        resolve('\nProcess is complete!');
+        // Add the left overs
+        if (bulk.length < bulkSize) {
+          processBulk(bulk, function () {
+            added = added + bulk.length;
+            process.stdout.write('Log: processed: ' + total + ' added: ' + added + ' skipped: ' + skipped + '\r');
+            resolve('\nProcess is complete!');
+          });
+        } else {
+          resolve('\nProcess is complete!');
+        }
       });
 
       rstream.on('error', function (err) {
