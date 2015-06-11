@@ -2,6 +2,11 @@
 
 A downloader for landsat metadata with auto update for Elasticsearch or Mongodb.
 
+### Requirements
+
+- Elastic Search 1.6+ if used with Elastic Search
+- MongoDB if used with MongoDB.
+
 ### Installation
 
     $ npm install
@@ -12,7 +17,7 @@ A downloader for landsat metadata with auto update for Elasticsearch or Mongodb.
 
 var Updater = require('landsat-meta-updater');
 
-var u = new Updater('landsat', '8');
+var u = new Updater('landsat', '8', 200);
 
 //Update Elastic Search
 u.updateEs(function(err, msg) {
@@ -23,3 +28,9 @@ u.updateEs(function(err, msg) {
 });
 
 ```
+
+The number 200 (bulksize) shows the size of the bulk objects used for elasticsearch bulk update.
+
+You can play around with the bulksize to speed up the update process. If `null` is passed, the updater adds records individually to Elastic Search (not recommended).
+
+Running the updater is an expensive operation for the first time because Elastic Search creates geo-indices for each image's bounding box.
