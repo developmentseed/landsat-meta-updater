@@ -209,9 +209,11 @@ module.exports.toElasticSearch = function (filename, esIndex, esType, bulkSize, 
 
       rstream.on('end', function () {
         // Add the left overs
-        if (bulk.length < bulkSize) {
+        var trigger = bulk.length / 2;
+
+        if (trigger < bulkSize) {
           processBulk(bulk, function () {
-            added = added + bulk.length;
+            added = added + trigger;
             process.stdout.write('Log: processed: ' + total + ' added: ' + added + ' skipped: ' + skipped + '\r');
             resolve('\nProcess is complete!');
           });

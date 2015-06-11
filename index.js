@@ -7,10 +7,10 @@ var progress = require('request-progress');
 var Promise = require('bluebird');
 var es = require('./libs/es.js');
 
-var Updater = function (esIndex, esType, bulkSize) {
+var Updater = function (esIndex, esType, bulkSize, downloadFolder) {
   // Globals
   this.url = 'http://landsat.usgs.gov/metadata_service/bulk_metadata_files/LANDSAT_8.csv';
-  this.downloadFolder = join(__dirname, 'download');
+  this.downloadFolder = downloadFolder || join(__dirname, 'download');
   this.csvFile = join(this.downloadFolder, 'landsat.csv');
   this.esIndex = esIndex;
   this.esType = esType;
@@ -27,7 +27,11 @@ Updater.prototype.download = function (url) {
     // If it is less than 12 hours skip
     fs.stat(self.csvFile, function (err, stats) {
       if (err) {
-        reject(err);
+        if (err.code !== 'ENOENT') {
+          reject(err);
+        } else {
+          stats = {mtime: '2010-01-01'};
+        }
       }
 
       var elapsed = (Date.now() - Date.parse(stats.mtime)) / 1000 / 60 / 60;
@@ -64,7 +68,7 @@ Updater.prototype.updateEs = function (cb) {
   this.download(self.url)
     .then(function () {
       return es.toElasticSearch(
-        join(__dirname, 'download', 'landsat.csv'),
+        self.csvFile,
         self.esIndex,
         self.esType,
         self.bulkSize
