@@ -1,6 +1,8 @@
 ## landsat-meta-updater
 
-A downloader for landsat metadata with auto update for Elasticsearch or Mongodb.
+[![Build Status](https://travis-ci.org/developmentseed/landsat-meta-updater.svg?branch=master)](https://travis-ci.org/developmentseed/landsat-meta-updater)
+
+A downloader for landsat metadata with auto update for Elasticsearch (MongoDB to be added soon).
 
 ### Requirements
 
