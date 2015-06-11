@@ -13,6 +13,46 @@ var added = 0;
 var skipped = 0;
 var header;
 
+var indexExist = function (indexName, typeName) {
+  return client.indices.exists({index: indexName}).then(function (resp) {
+    if (resp) {
+      return false;
+    } else {
+      console.log(indexName + ' does not exist');
+      return createIndex(indexName, typeName);
+    }
+  }).catch(function (err) {
+    throw err;
+  });
+};
+
+var landsatMetaObject = function (header, record) {
+  var output = {};
+
+  for (var j = 0; j < header.length; j++) {
+    // convert numbers to float
+    var value = parseFloat(record[j]);
+    if (_.isNaN(value) || skipFields.indexOf(header[j]) !== -1) {
+      value = record[j];
+    }
+    output[header[j]] = value;
+  }
+
+  // Create bounding box
+  output.boundingBox = {
+    type: 'polygon',
+    coordinates: [[
+      [output.upperRightCornerLongitude, output.upperRightCornerLatitude],
+      [output.upperLeftCornerLongitude, output.upperLeftCornerLatitude],
+      [output.lowerLeftCornerLongitude, output.lowerLeftCornerLatitude],
+      [output.lowerRightCornerLongitude, output.lowerRightCornerLatitude],
+      [output.upperRightCornerLongitude, output.upperRightCornerLatitude]
+    ]]
+  };
+
+  return output;
+};
+
 var addMapping = module.exports.addMapping = function (indexName, typeName) {
   var mapping = {};
 
@@ -57,46 +97,6 @@ var createIndex = module.exports.createIndex = function (indexName, typeName) {
       console.log(err);
       throw err;
     });
-};
-
-var indexExist = function (indexName, typeName) {
-  return client.indices.exists({index: indexName}).then(function (resp) {
-    if (resp) {
-      return false;
-    } else {
-      console.log(indexName + ' does not exist');
-      return createIndex(indexName, typeName);
-    }
-  }).catch(function (err) {
-    throw err;
-  });
-};
-
-var landsatMetaObject = function (header, record) {
-  var output = {};
-
-  for (var j = 0; j < header.length; j++) {
-    // convert numbers to float
-    var value = parseFloat(record[j]);
-    if (_.isNaN(value) || skipFields.indexOf(header[j]) !== -1) {
-      value = record[j];
-    }
-    output[header[j]] = value;
-  }
-
-  // Create bounding box
-  output.boundingBox = {
-    type: 'polygon',
-    coordinates: [[
-      [output.upperRightCornerLongitude, output.upperRightCornerLatitude],
-      [output.upperLeftCornerLongitude, output.upperLeftCornerLatitude],
-      [output.lowerLeftCornerLongitude, output.lowerLeftCornerLatitude],
-      [output.lowerRightCornerLongitude, output.lowerRightCornerLatitude],
-      [output.upperRightCornerLongitude, output.upperRightCornerLatitude]
-    ]]
-  };
-
-  return output;
 };
 
 var processBulk = module.exports.processBulk = function (bulk, cb) {
