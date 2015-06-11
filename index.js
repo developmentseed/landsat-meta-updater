@@ -26,6 +26,10 @@ Updater.prototype.download = function (url) {
     // Check modification date of the csv file
     // If it is less than 12 hours skip
     fs.stat(self.csvFile, function (err, stats) {
+      if (err) {
+        reject(err);
+      }
+
       var elapsed = (Date.now() - Date.parse(stats.mtime)) / 1000 / 60 / 60;
 
       if (elapsed < 12) {
