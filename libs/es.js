@@ -13,7 +13,7 @@ var added = 0;
 var skipped = 0;
 var header;
 
-var addMapping = function (indexName, typeName) {
+var addMapping = module.exports.addMapping = function (indexName, typeName) {
   var mapping = {
     '8': {
       properties: {
@@ -50,7 +50,7 @@ var addMapping = function (indexName, typeName) {
   });
 };
 
-var createIndex = function (indexName, typeName) {
+var createIndex = module.exports.createIndex = function (indexName, typeName) {
   return client.indices.create({index: indexName}).then(function () {
     return addMapping(indexName, typeName);
   }).catch(function (err) {
@@ -98,13 +98,14 @@ var landsatMetaObject = function (header, record) {
   return output;
 };
 
-var processBulk = module.exports.processBulk = function (bulk) {
+var processBulk = module.exports.processBulk = function (bulk, cb) {
   client.bulk({
     body: bulk
   }, function (err) {
     if (err) {
       // this is an error
     }
+    cb();
   });
 };
 
@@ -183,11 +184,12 @@ module.exports.toElasticSearch = function (filename, esIndex, esType, bulkSize, 
                       bulkCounter++;
                       rstream.resume();
                     } else {
-                      processBulk(bulk);
-                      bulkCounter = 0;
-                      bulk = [];
-                      added = added + bulkSize;
-                      rstream.resume();
+                      processBulk(bulk, function () {
+                        bulkCounter = 0;
+                        bulk = [];
+                        added = added + bulkSize;
+                        rstream.resume();
+                      });
                     }
                   } else {
                     processSingle(meta, esIndex, esType, function (err) {
