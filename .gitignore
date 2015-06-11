@@ -6,7 +6,6 @@ download
 .*.swp
 *.log
 *.pyc
-*.csv
 dist
 .env
 sample.js
