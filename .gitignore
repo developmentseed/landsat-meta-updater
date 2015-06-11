@@ -9,3 +9,4 @@ download
 *.csv
 dist
 .env
+sample.js
