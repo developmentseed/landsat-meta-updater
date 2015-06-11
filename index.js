@@ -23,22 +23,32 @@ Updater.prototype.download = function (url) {
   return new Promise(function (resolve, reject) {
     fs.mkdirsSync(self.downloadFolder);
 
-    progress(request(url), {
-        delay: 1000      // Only start to emit after 1000ms delay
-    })
-    .on('progress', function (state) {
-      var size = Math.floor(state.received / Math.pow(1024, 2)).toFixed(2);
-      process.stdout.write('Received size:              ' + size + 'MB \r');
-    })
-    .pipe(fs.createWriteStream(self.csvFile))
-    .on('error', function (err) {
-      reject(err);
-    })
-    .on('close', function () {
-      console.log('\n Download Completed!');
-      resolve();
-    });
+    // Check modification date of the csv file
+    // If it is less than 12 hours skip
+    fs.stat(self.csvFile, function (err, stats) {
+      var elapsed = (Date.now() - Date.parse(stats.mtime)) / 1000 / 60 / 60;
 
+      if (elapsed < 12) {
+        console.log('Meta file was downloaded less than 12 hours ago!');
+        resolve();
+      } else {
+        progress(request(url), {
+            delay: 1000      // Only start to emit after 1000ms delay
+        })
+        .on('progress', function (state) {
+          var size = Math.floor(state.received / Math.pow(1024, 2)).toFixed(2);
+          process.stdout.write('Received size:              ' + size + 'MB \r');
+        })
+        .pipe(fs.createWriteStream(self.csvFile))
+        .on('error', function (err) {
+          reject(err);
+        })
+        .on('close', function () {
+          console.log('\n Download Completed!');
+          resolve();
+        });
+      }
+    });
   });
 };
 
@@ -60,7 +70,6 @@ Updater.prototype.updateEs = function (cb) {
     }).catch(function (err) {
       throw err;
     }).nodeify(cb);
-
 };
 
 module.exports = Updater;
