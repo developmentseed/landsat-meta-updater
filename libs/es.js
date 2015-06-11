@@ -14,27 +14,27 @@ var skipped = 0;
 var header;
 
 var addMapping = module.exports.addMapping = function (indexName, typeName) {
-  var mapping = {
-    '8': {
-      properties: {
-        sceneID: {'type': 'string', 'index': 'not_analyzed'},
-        row: {'type': 'integer'},
-        path: {'type': 'integer'},
-        cloudCover: {'type': 'float'},
-        cloudCoverFull: {'type': 'float'},
-        upperLeftCornerLatitude: {'type': 'double'},
-        upperLeftCornerLongitude: {'type': 'double'},
-        lowerLeftCornerLatitude: {'type': 'double'},
-        lowerLeftCornerLongitude: {'type': 'double'},
-        sceneCenterLatitude: {'type': 'double'},
-        sceneCenterLongitude: {'type': 'double'},
-        lowerRightCornerLatitude: {'type': 'double'},
-        lowerRightCornerLongitude: {'type': 'double'},
-        upperRightCornerLatitude: {'type': 'double'},
-        upperRightCornerLongitude: {'type': 'double'},
-        acquisitionDate: {'type': 'date', format: 'date'},
-        boundingBox: {'type': 'geo_shape', 'precision': '1mi'}
-      }
+  var mapping = {};
+
+  mapping[typeName] = {
+    properties: {
+      sceneID: {'type': 'string', 'index': 'not_analyzed'},
+      row: {'type': 'integer'},
+      path: {'type': 'integer'},
+      cloudCover: {'type': 'float'},
+      cloudCoverFull: {'type': 'float'},
+      upperLeftCornerLatitude: {'type': 'double'},
+      upperLeftCornerLongitude: {'type': 'double'},
+      lowerLeftCornerLatitude: {'type': 'double'},
+      lowerLeftCornerLongitude: {'type': 'double'},
+      sceneCenterLatitude: {'type': 'double'},
+      sceneCenterLongitude: {'type': 'double'},
+      lowerRightCornerLatitude: {'type': 'double'},
+      lowerRightCornerLongitude: {'type': 'double'},
+      upperRightCornerLatitude: {'type': 'double'},
+      upperRightCornerLongitude: {'type': 'double'},
+      acquisitionDate: {'type': 'date', format: 'date'},
+      boundingBox: {'type': 'geo_shape', 'precision': '1mi'}
     }
   };
 
@@ -52,10 +52,11 @@ var addMapping = module.exports.addMapping = function (indexName, typeName) {
 
 var createIndex = module.exports.createIndex = function (indexName, typeName) {
   return client.indices.create({index: indexName}).then(function () {
-    return addMapping(indexName, typeName);
-  }).catch(function (err) {
-    throw err;
-  });
+      return addMapping(indexName, typeName);
+    }).catch(function (err) {
+      console.log(err);
+      throw err;
+    });
 };
 
 var indexExist = function (indexName, typeName) {
