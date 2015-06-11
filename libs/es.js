@@ -1,19 +1,16 @@
 'use strict';
 
 var _ = require('lodash');
-var fs = require('fs');
 var csv = require('csv');
 var Promise = require('bluebird');
+var LineByLineReader = require('line-by-line');
 var client = require('./connections.js').elasticsearch;
 
 // Global variables
 var skipFields = ['dateUpdated', 'sceneStopTime', 'sceneStartTime', 'acquisitionDate'];
-var groupId = 0;
-var group = [];
-var bulk = [];
-var bulkSize = 2000;
 var total = 0;
 var added = 0;
+var skipped = 0;
 var header;
 
 var addMapping = function (indexName, typeName) {
@@ -36,7 +33,7 @@ var addMapping = function (indexName, typeName) {
         upperRightCornerLatitude: {'type': 'double'},
         upperRightCornerLongitude: {'type': 'double'},
         acquisitionDate: {'type': 'date', format: 'date'},
-        boundingBox: {'type': 'geo_shape'}
+        boundingBox: {'type': 'geo_shape', 'precision': '1mi'}
       }
     }
   };
@@ -74,83 +71,149 @@ var indexExist = function (indexName, typeName) {
   });
 };
 
-var processBulk = module.exports.processBulk = function (id) {
+var landsatMetaObject = function (header, record) {
+  var output = {};
+
+  for (var j = 0; j < header.length; j++) {
+    // convert numbers to float
+    var value = parseFloat(record[j]);
+    if (_.isNaN(value) || skipFields.indexOf(header[j]) !== -1) {
+      value = record[j];
+    }
+    output[header[j]] = value;
+  }
+
+  // Create bounding box
+  output.boundingBox = {
+    type: 'polygon',
+    coordinates: [[
+      [output.upperRightCornerLongitude, output.upperRightCornerLatitude],
+      [output.upperLeftCornerLongitude, output.upperLeftCornerLatitude],
+      [output.lowerLeftCornerLongitude, output.lowerLeftCornerLatitude],
+      [output.lowerRightCornerLongitude, output.lowerRightCornerLatitude],
+      [output.upperRightCornerLongitude, output.upperRightCornerLatitude]
+    ]]
+  };
+
+  return output;
+};
+
+var processBulk = module.exports.processBulk = function (bulk) {
   client.bulk({
-    body: group[id]
+    body: bulk
   }, function (err) {
     if (err) {
-      console.log(err);
-    }
-
-    added = added + group[id].length / 2;
-    group[id] = [];
-    // id++;
-    if (id <= groupId) {
-      process.stdout.write('Log: processed: ' + total + ' added: ' + added + '\r');
-      // processBulk(id);
+      // this is an error
     }
   });
 };
 
-var addToBulk = module.exports.addToBulk = function (counter, record, esIndex, esType) {
-  // Read the header
-  if (counter === 0) {
-    header = record;
-  } else {
-    var output = {};
-
-    for (var j = 0; j < header.length; j++) {
-      // convert numbers to float
-      var value = parseFloat(record[j]);
-      if (_.isNaN(value) || skipFields.indexOf(header[j]) !== -1) {
-        value = record[j];
+var processSingle = module.exports.processSingle = function (record, esIndex, esType, cb) {
+  client.index({
+    index: esIndex,
+    type: esType,
+    id: record.sceneID,
+    body: record,
+    opType: 'create'
+  }, function (err) {
+    if (err) {
+      if (err.status === '409') {
+        skipped++;
+      } else {
+        console.log(err);
       }
-      output[header[j]] = value;
-    }
-
-    if (bulk.length < bulkSize) {
-      bulk.push({index: {_index: esIndex, _type: esType, _id: record[0]}});
-      bulk.push(output);
-      total++;
     } else {
-      group[groupId] = bulk;
-      bulk = [];
-      processBulk(groupId);
-      groupId++;
+      added++;
     }
-  }
-
-  return counter + 1;
+    cb(err);
+  });
 };
 
-module.exports.toElasticSearch = function (filename, esIndex, esType, callback) {
+module.exports.toElasticSearch = function (filename, esIndex, esType, bulkSize, callback) {
   return indexExist(esIndex, esType).then(function (state) {
     if (state) {
       console.log(esIndex, 'index created!');
     } else {
-      console.log(esType, 'index already exists!');
+      console.log(esIndex, 'index already exists!');
     }
     return;
-  }).done(function () {
+  }).then(function () {
     return new Promise(function (resolve, reject) {
-      var rstream = fs.createReadStream(filename);
-      var i = 0;
+      var rstream = new LineByLineReader(filename);
 
-      rstream.pipe(csv.parse())
-        .pipe(csv.transform(function (record) {
-          i = addToBulk(i, record, esIndex, esType);
-          process.stdout.write('Log: processed: ' + total + ' added: ' + added + '\r');
-        }))
-        .on('unpipe', function () {
-          console.log('\n');
-          resolve('Process Completed!');
-        })
-        .on('error', function (err) {
+      var i = 0;
+      var bulkCounter = 0;
+      var bulk = [];
+
+      rstream.on('line', function (line) {
+        // pause until processing is done
+
+        rstream.pause();
+        process.stdout.write('Log: processed: ' + total + ' added: ' + added + ' skipped: ' + skipped + '\r');
+        csv.parse(line, function (err, data) {
+          if (err) {
+            return reject(err);
+          }
+
+          csv.transform(data, function (data) {
+            // get the header
+            if (i === 0) {
+              header = data;
+              i++;
+              rstream.resume();
+            } else {
+              total++;
+              client.exists({
+                index: esIndex,
+                type: esType,
+                id: data[0]
+              }, function (error, exists) {
+
+                if (exists === true) {
+                  skipped++;
+                  rstream.resume();
+                } else {
+                  var meta = landsatMetaObject(header, data);
+
+                  if (bulkSize) {
+                    bulk.push({create: {_index: esIndex, _type: esType, _id: meta.sceneID}});
+                    bulk.push(meta);
+
+                    if (bulkCounter < bulkSize) {
+                      bulkCounter++;
+                      rstream.resume();
+                    } else {
+                      processBulk(bulk);
+                      bulkCounter = 0;
+                      bulk = [];
+                      added = added + bulkSize;
+                      rstream.resume();
+                    }
+                  } else {
+                    processSingle(meta, esIndex, esType, function (err) {
+                      if (err) {
+                        console.log(err);
+                      }
+                      rstream.resume();
+                    });
+                  }
+                }
+              });
+
+            }
+          });
+        });
+      });
+
+      rstream.on('end', function () {
+        resolve('\nProcess is complete!');
+      });
+
+      rstream.on('error', function (err) {
         reject(err);
       });
     });
   }).catch(function (err) {
     throw err;
   }).nodeify(callback);
-
 };
