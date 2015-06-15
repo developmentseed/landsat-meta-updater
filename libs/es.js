@@ -4,6 +4,7 @@ var _ = require('lodash');
 var csv = require('csv');
 var Promise = require('bluebird');
 var LineByLineReader = require('line-by-line');
+var format = require('date-format');
 var client = require('./connections.js').elasticsearch;
 
 // Global variables
@@ -12,6 +13,19 @@ var total = 0;
 var added = 0;
 var skipped = 0;
 var header;
+
+var dateConverter = function (value) {
+  var arr = value.split(':');
+
+  var blank_date = new Date(arr[0], 0);
+  blank_date.setDate(arr[1]);
+  blank_date.setHours(arr[2]);
+  blank_date.setMinutes(arr[3]);
+  blank_date.setMilliseconds(arr[4]);
+  var date = new Date(blank_date);
+
+  return format('yyyy-MM-ddThh:mm:ss.SSS', date);
+}
 
 var indexExist = function (indexName, typeName) {
   return client.indices.exists({index: indexName}).then(function (resp) {
@@ -31,10 +45,15 @@ var landsatMetaObject = function (header, record) {
 
   for (var j = 0; j < header.length; j++) {
     // convert numbers to float
-    var value = parseFloat(record[j]);
-    if (_.isNaN(value) || skipFields.indexOf(header[j]) !== -1) {
-      value = record[j];
+    if (header[j] === 'sceneStartTime' || header[j] === 'sceneStopTime') {
+      value = dateConverter(record[j]);
+    } else {
+      var value = parseFloat(record[j]);
+      if (_.isNaN(value) || skipFields.indexOf(header[j]) !== -1) {
+        value = record[j];
+      }
     }
+
     output[header[j]] = value;
   }
 
@@ -59,21 +78,17 @@ var addMapping = module.exports.addMapping = function (indexName, typeName) {
   mapping[typeName] = {
     properties: {
       sceneID: {'type': 'string', 'index': 'not_analyzed'},
+      sensor: {'type': 'string'},
+      receivingStation: {'type': 'string'},
+      dayOrNight: {'type': 'string'},
       row: {'type': 'integer'},
       path: {'type': 'integer'},
-      cloudCover: {'type': 'float'},
+      sunAzimuth: {'type': 'float'},
+      sunElevation: {'type': 'float'},
       cloudCoverFull: {'type': 'float'},
-      upperLeftCornerLatitude: {'type': 'double'},
-      upperLeftCornerLongitude: {'type': 'double'},
-      lowerLeftCornerLatitude: {'type': 'double'},
-      lowerLeftCornerLongitude: {'type': 'double'},
-      sceneCenterLatitude: {'type': 'double'},
-      sceneCenterLongitude: {'type': 'double'},
-      lowerRightCornerLatitude: {'type': 'double'},
-      lowerRightCornerLongitude: {'type': 'double'},
-      upperRightCornerLatitude: {'type': 'double'},
-      upperRightCornerLongitude: {'type': 'double'},
-      acquisitionDate: {'type': 'date', format: 'date'},
+      sceneStartTime: {'type': 'date'},
+      sceneStopTime: {'type': 'date'},
+      acquisitionDate: {'type': 'date'},
       boundingBox: {'type': 'geo_shape', 'precision': '1mi'}
     }
   };
