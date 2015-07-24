@@ -6,6 +6,8 @@ var request = require('request');
 var progress = require('request-progress');
 var Promise = require('bluebird');
 var es = require('./libs/es.js');
+var MongoDb = require('./libs/connections.js').mongodb;
+var mongoUpdater = require('./libs/mongo/updater.js');
 
 var Updater = function (esIndex, esType, bulkSize, downloadFolder) {
   // Globals
@@ -73,6 +75,25 @@ Updater.prototype.updateEs = function (cb) {
         self.esType,
         self.bulkSize
       );
+    }).then(function (msg) {
+      return msg;
+    }).catch(function (err) {
+      throw err;
+    }).nodeify(cb);
+};
+
+Updater.prototype.updateMongoDb = function (cb) {
+  console.log('Downloading landsat.csv from NASA ...');
+
+  var self = this;
+
+  // Start MongoDb
+  var db = new MongoDb(process.env.DBNAME || 'landsat-api', process.env.DBURI);
+  db.start();
+
+  this.download(self.url)
+    .then(function () {
+      return mongoUpdater.toMongoDb(self.csvFile, 'landsat');
     }).then(function (msg) {
       return msg;
     }).catch(function (err) {
