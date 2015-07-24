@@ -25,30 +25,18 @@ var dateConverter = function (value) {
   var date = new Date(blank_date);
 
   return format('yyyy-MM-ddThh:mm:ss.SSS', date);
-}
-
-var indexExist = function (indexName, typeName) {
-  return client.indices.exists({index: indexName}).then(function (resp) {
-    if (resp) {
-      return false;
-    } else {
-      console.log(indexName + ' does not exist');
-      return createIndex(indexName, typeName);
-    }
-  }).catch(function (err) {
-    throw err;
-  });
 };
 
 var landsatMetaObject = function (header, record) {
   var output = {};
+  var value;
 
   for (var j = 0; j < header.length; j++) {
     // convert numbers to float
     if (header[j] === 'sceneStartTime' || header[j] === 'sceneStopTime') {
       value = dateConverter(record[j]);
     } else {
-      var value = parseFloat(record[j]);
+      value = parseFloat(record[j]);
       if (_.isNaN(value) || skipFields.indexOf(header[j]) !== -1) {
         value = record[j];
       }
@@ -112,6 +100,19 @@ var createIndex = module.exports.createIndex = function (indexName, typeName) {
       console.log(err);
       throw err;
     });
+};
+
+var indexExist = function (indexName, typeName) {
+  return client.indices.exists({index: indexName}).then(function (resp) {
+    if (resp) {
+      return false;
+    } else {
+      console.log(indexName + ' does not exist');
+      return createIndex(indexName, typeName);
+    }
+  }).catch(function (err) {
+    throw err;
+  });
 };
 
 var processBulk = module.exports.processBulk = function (bulk, cb) {
@@ -183,6 +184,9 @@ module.exports.toElasticSearch = function (filename, esIndex, esType, bulkSize, 
                 type: esType,
                 id: data[0]
               }, function (error, exists) {
+                if (error) {
+                  console.log(error);
+                }
 
                 if (exists === true) {
                   skipped++;
