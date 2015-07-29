@@ -5,7 +5,8 @@ var join = require('path').join;
 var request = require('request');
 var progress = require('request-progress');
 var Promise = require('bluebird');
-var es = require('./libs/es.js');
+var async = require('async');
+var es = require('./libs/es/updater.js');
 var MongoDb = require('./libs/connections.js').mongodb;
 var mongoUpdater = require('./libs/mongo/updater.js');
 
@@ -19,46 +20,59 @@ var Updater = function (esIndex, esType, bulkSize, downloadFolder) {
   this.bulkSize = bulkSize;
 };
 
-Updater.prototype.download = function (url) {
+// Downloads the url to the given path
+var downloadCsv = function (url, path, callback) {
+  progress(request(url), {
+      delay: 1000      // Only start to emit after 1000ms delay
+  })
+  .on('progress', function (state) {
+    var size = Math.floor(state.received / Math.pow(1024, 2)).toFixed(2);
+    process.stdout.write('Received size:              ' + size + 'MB \r');
+  })
+  .pipe(fs.createWriteStream(path))
+  .on('error', function (err) {
+    callback(err);
+  })
+  .on('close', function () {
+    console.log('\n Download Completed!');
+    callback(null);
+  });
+};
+
+Updater.prototype.download = function (cb) {
   var self = this;
 
-  return new Promise(function (resolve, reject) {
-    fs.mkdirsSync(self.downloadFolder);
-
-    // Check modification date of the csv file
-    // If it is less than 12 hours skip
-    fs.stat(self.csvFile, function (err, stats) {
-      if (err) {
-        if (err.code !== 'ENOENT') {
-          reject(err);
-        } else {
-          stats = {mtime: '2010-01-01'};
+  async.waterfall([
+    // Create download directory
+    function (callback) {
+      fs.mkdirsSync(self.downloadFolder);
+      callback(null);
+    },
+    // // Check when was the last time the file was downloaded
+    function (callback) {
+      fs.stat(self.csvFile, function (err, stats) {
+        if (err) {
+          if (err.code !== 'ENOENT') {
+            callback(err);
+          } else {
+            stats = {mtime: '2010-01-01'};
+          }
         }
-      }
-
+        callback(err, stats);
+      });
+    },
+    // // Download the file
+    function (stats, callback) {
       var elapsed = (Date.now() - Date.parse(stats.mtime)) / 1000 / 60 / 60;
-
       if (elapsed < 12) {
         console.log('Meta file was downloaded less than 12 hours ago!');
-        resolve();
+        callback(null);
       } else {
-        progress(request(url), {
-            delay: 1000      // Only start to emit after 1000ms delay
-        })
-        .on('progress', function (state) {
-          var size = Math.floor(state.received / Math.pow(1024, 2)).toFixed(2);
-          process.stdout.write('Received size:              ' + size + 'MB \r');
-        })
-        .pipe(fs.createWriteStream(self.csvFile))
-        .on('error', function (err) {
-          reject(err);
-        })
-        .on('close', function () {
-          console.log('\n Download Completed!');
-          resolve();
-        });
+        downloadCsv(self.url, self.csvFile, callback);
       }
-    });
+    }
+  ], function (err, result) {
+    cb(err, result);
   });
 };
 
@@ -67,7 +81,7 @@ Updater.prototype.updateEs = function (cb) {
 
   var self = this;
 
-  this.download(self.url)
+  this.download()
     .then(function () {
       return es.toElasticSearch(
         self.csvFile,
@@ -82,23 +96,25 @@ Updater.prototype.updateEs = function (cb) {
     }).nodeify(cb);
 };
 
-Updater.prototype.updateMongoDb = function (cb) {
+Updater.prototype.updateMongoDb = function (dbURL, cb) {
   console.log('Downloading landsat.csv from NASA ...');
 
   var self = this;
 
   // Start MongoDb
-  var db = new MongoDb(process.env.DBNAME || 'landsat-api', process.env.DBURI);
+  var db = new MongoDb(process.env.DBNAME || 'landsat-api', dbURL);
   db.start();
 
-  this.download(self.url)
-    .then(function () {
-      return mongoUpdater.toMongoDb(self.csvFile, 'landsat');
-    }).then(function (msg) {
-      return msg;
-    }).catch(function (err) {
-      throw err;
-    }).nodeify(cb);
+  async.waterfall([
+    function (callback) {
+      self.download(callback);
+    },
+    function (result, callback) {
+      mongoUpdater.toMongoDb(self.csvFile, self.bulkSize, callback);
+    }
+  ], function (err, result) {
+    cb(err, result);
+  });
 };
 
 module.exports = Updater;
