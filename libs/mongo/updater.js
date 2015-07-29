@@ -2,15 +2,12 @@
 
 var _ = require('lodash');
 var LineByLineReader = require('line-by-line');
-var Promise = require('bluebird');
-var Landsat = require('./model.js');
 var format = require('date-format');
 var csv = require('csv');
+var async = require('async');
+var Landsat = require('./model.js');
 
 var skipFields = ['dateUpdated', 'sceneStopTime', 'sceneStartTime', 'acquisitionDate'];
-var total = 0;
-var added = 0;
-var skipped = 0;
 
 var dateConverter = function (value) {
   var arr = value.split(':');
@@ -69,66 +66,120 @@ var landsatMetaObject = function (header, record) {
   return output;
 };
 
-module.exports.toMongoDb = function (filename, collelction, cb) {
-  var header;
-  var i = 0;
+// Process records in bulk
+var processBulk = function (header, data, bulk, bulkSize, cb) {
+  var skipped = false;
+  var added = true;
 
-  return new Promise(function (resolve, reject) {
-    // Read the file line by line
-    var rstream = new LineByLineReader(filename);
-    rstream.on('line', function (line) {
-      // pause until processing is done
-      rstream.pause();
+  var meta = landsatMetaObject(header, data);
 
-      csv.parse(line, function (err, data) {
-        if (err) {
-          return reject(err);
-        }
+  // if bulk object length is less than bulksize add to object
+  // otherwise insert to mongoDB
+  if (bulk.length < bulkSize) {
+    added = true;
+    bulk.push(meta);
+    cb(null, added, skipped, bulk);
+  } else {
+    // Insert to DB
+    Landsat.collection.insert(bulk, {ordered: false}, function (err) {
+      // Ignore errs. Because every duplicate record throws and error
+      cb(null, added, skipped, []);
+    });
+  }
+};
 
-        csv.transform(data, function (data) {
-          // get the header
-          if (i === 0) {
-            header = data;
-            i++;
-            rstream.resume();
-          } else {
-            total++;
-            // Check if record exist, if not add it
-            Landsat.findOne({sceneID: data[0]}, function (err, meta) {
-              if (err) {
-                return reject(err);
-              }
+// Process a single record and add it to MongoDB
+var processSingle = function (header, data, cb) {
+  var skipped = false;
+  var added = false;
 
-              // if no record is found add the new row, otherwise skip
-              if (meta === null) {
-                var meta = landsatMetaObject(header, data);
+  async.waterfall([
+    function (callback) {
+      Landsat.findOne({sceneID: data[0]}, callback);
+    },
+    function (meta, callback) {
+      // if no record is found add the new row, otherwise skip
+      if (meta === null) {
+        meta = landsatMetaObject(header, data);
 
-                var record = new Landsat(meta);
-                record.save(function (err, record) {
-                  if (err) {
-                    return reject(err);
-                  }
-                  added++;
-                  rstream.resume();
-                });
-              } else {
-                skipped++;
-                rstream.resume();
-              }
-            });
+        var record = new Landsat(meta);
+        record.save(function (err, record) {
+          if (err) {
+            return callback(err);
           }
-          process.stdout.write('Log: processed: ' + total + ' added: ' + added + ' skipped: ' + skipped + '\r');
+          added = true;
+          callback(null);
         });
-      });
-    });
+      } else {
+        skipped = true;
+        callback(null);
+      }
+    }
+  ],
+  function (err) {
+    cb(err, added, skipped);
+  });
+};
 
-    rstream.on('end', function () {
-      resolve('\nProcess is complete!');
-    });
+module.exports.toMongoDb = function (filename, bulkSize, cb) {
+  var header = null;
+  var total = 0;
+  var added = 0;
+  var skipped = 0;
+  var bulk = [];
 
-    rstream.on('error', function (err) {
-      reject(err);
-    });
+  // Read the file line by line
+  var rstream = new LineByLineReader(filename);
+  rstream.on('line', function (line) {
+    // pause until processing is done
+    rstream.pause();
+    total++;
 
-  }).nodeify(cb);
+    async.waterfall([
+      function (callback) {
+        csv.parse(line, callback);
+      },
+      function (data, callback) {
+        csv.transform(data, function (data) {
+          if (!header) {
+            header = data;
+            callback(null);
+          } else {
+            // Do bulk upload if bulksize is provided
+            if (bulkSize) {
+              processBulk(header, data, bulk, bulkSize, callback);
+            } else {
+              processSingle(header, data, callback);
+            }
+          }
+        });
+      }
+
+    // Final step
+    ], function (err, a, s, bulkReturn) {
+      if (err) {
+        return cb(err);
+      }
+
+      if (a) added++;
+      if (s) skipped++;
+
+      if (bulkReturn) {
+        bulk = bulkReturn;
+      }
+
+      process.stdout.write('Log: processed: ' + total + ' added: ' + added + ' skipped: ' + skipped + '\r');
+      rstream.resume();
+    });
+  });
+
+  // Fire when the file read is done
+  rstream.on('end', function () {
+    return cb(null, '\nProcess is complete!');
+  });
+
+  // catch errors
+  rstream.on('error', function (err) {
+    return cb(err);
+  });
 };
