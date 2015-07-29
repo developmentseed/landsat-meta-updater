@@ -5,7 +5,7 @@ var csv = require('csv');
 var Promise = require('bluebird');
 var LineByLineReader = require('line-by-line');
 var format = require('date-format');
-var client = require('./connections.js').elasticsearch;
+var client = require('../connections.js').elasticsearch;
 
 // Global variables
 var skipFields = ['dateUpdated', 'sceneStopTime', 'sceneStartTime', 'acquisitionDate'];
