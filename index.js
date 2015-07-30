@@ -58,7 +58,7 @@ Updater.prototype.download = function (cb) {
             stats = {mtime: '2010-01-01'};
           }
         }
-        callback(err, stats);
+        callback(null, stats);
       });
     },
     // // Download the file
@@ -101,15 +101,21 @@ Updater.prototype.updateMongoDb = function (dbURL, cb) {
 
   var self = this;
 
-  // Start MongoDb
-  var db = new MongoDb(process.env.DBNAME || 'landsat-api', dbURL);
-  db.start();
-
   async.waterfall([
+    // Download landsat meta csv file
     function (callback) {
       self.download(callback);
     },
+
+    // Connect to MongoDb
     function (result, callback) {
+      var db = new MongoDb(process.env.DBNAME || 'landsat-api', dbURL);
+      db.start(callback);
+    },
+
+    // Add new records to MongoDB
+    function (callback) {
+      console.log();
       mongoUpdater.toMongoDb(self.csvFile, self.bulkSize, callback);
     }
   ], function (err, result) {
