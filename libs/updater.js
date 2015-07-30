@@ -121,3 +121,5 @@ Updater.prototype.updateMongoDb = function (dbURL, cb) {
     cb(err, result);
   });
 };
+
+module.exports = Updater;
