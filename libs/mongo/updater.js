@@ -81,7 +81,7 @@ var processBulk = function (header, data, bulk, bulkSize, cb) {
     cb(null, added, skipped, bulk);
   } else {
     // Insert to DB
-    Landsat.collection.insert(bulk, {ordered: false}, function (err) {
+    Landsat.collection.insert(bulk, {ordered: false}, function () {
       // Ignore errs. Because every duplicate record throws and error
       cb(null, added, skipped, []);
     });
