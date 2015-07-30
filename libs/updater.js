@@ -106,14 +106,8 @@ Updater.prototype.updateMongoDb = function (dbURL, cb) {
       self.download(callback);
     },
 
-    // Connect to MongoDb
-    function (result, callback) {
-      var db = new MongoDb(process.env.DBNAME || 'landsat-api', dbURL);
-      db.start(callback);
-    },
-
     // Add new records to MongoDB
-    function (callback) {
+    function (resutl, callback) {
       console.log();
       mongoUpdater.toMongoDb(self.csvFile, self.bulkSize, callback);
     }
