@@ -28,9 +28,7 @@ Mongodb.prototype.start = function (cb) {
   this.db.on('error', console.error.bind(console, 'connection error:'));
   this.db.once('open', function () {
     console.log('connected');
-    if (cb) {
-      cb();
-    }
+    cb();
   });
 };
 
