@@ -71,20 +71,20 @@ var processBulk = function (header, data, bulk, bulkSize, cb) {
   var skipped = false;
   var added = true;
 
+  // Create object and add it to bulk
+  added = true;
   var meta = landsatMetaObject(header, data);
+  bulk.push(meta);
 
-  // if bulk object length is less than bulksize add to object
-  // otherwise insert to mongoDB
-  if (bulk.length < bulkSize) {
-    added = true;
-    bulk.push(meta);
-    cb(null, added, skipped, bulk);
-  } else {
+  // if bulk object length equal bulksize insert it to mongoDB
+  if (bulk.length >= bulkSize) {
     // Insert to DB
     Landsat.collection.insert(bulk, {ordered: false}, function () {
       // Ignore errs. Because every duplicate record throws and error
       cb(null, added, skipped, []);
     });
+  } else {
+    cb(null, added, skipped, bulk);
   }
 };
 
@@ -127,26 +127,38 @@ module.exports.toMongoDb = function (filename, bulkSize, cb) {
   var added = 0;
   var skipped = 0;
   var bulk = [];
+  var lastLine;
 
   // Read the file line by line
   var rstream = new LineByLineReader(filename);
   rstream.on('line', function (line) {
     // pause until processing is done
     rstream.pause();
-    total++;
+
+    // Keep last line
+    lastLine = line;
 
     async.waterfall([
+      // Parse the CSV
       function (callback) {
         csv.parse(line, callback);
       },
+
+      // Transform it and send to DB
       function (data, callback) {
         csv.transform(data, function (data) {
+          // First line is the header
           if (!header) {
             header = data;
             callback(null);
+
+          // The rest is data
           } else {
+            total++;
+
             // Do bulk upload if bulksize is provided
             if (bulkSize) {
+              // console.log(data[0]);
               processBulk(header, data, bulk, bulkSize, callback);
             } else {
               processSingle(header, data, callback);
@@ -175,7 +187,14 @@ module.exports.toMongoDb = function (filename, bulkSize, cb) {
 
   // Fire when the file read is done
   rstream.on('end', function () {
-    return cb(null, '\nProcess is complete!');
+    // Process the remaining items in bulk if any
+    if (bulk.length > 0) {
+      processBulk(header, lastLine, bulk, bulk.length + 1, function () {
+        cb(null, '\nProcess is complete!');
+      });
+    } else {
+      return cb(null, '\nProcess is complete!');
+    }
   });
 
   // catch errors
