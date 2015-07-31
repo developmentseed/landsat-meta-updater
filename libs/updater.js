@@ -6,7 +6,6 @@ var request = require('request');
 var progress = require('request-progress');
 var async = require('async');
 var es = require('./es/updater.js');
-var MongoDb = require('./connections.js').mongodb;
 var mongoUpdater = require('./mongo/updater.js');
 
 var Updater = function (esIndex, esType, bulkSize, downloadFolder) {
@@ -80,19 +79,27 @@ Updater.prototype.updateEs = function (cb) {
 
   var self = this;
 
-  this.download()
-    .then(function () {
-      return es.toElasticSearch(
+  async.waterfall([
+    // Download landsat
+    function (callback) {
+      self.download(callback);
+    },
+
+    // Add new records to ES
+    function (result, callback) {
+      es.toElasticSearch(
         self.csvFile,
         self.esIndex,
         self.esType,
-        self.bulkSize
+        self.bulkSize,
+        callback
       );
-    }).then(function (msg) {
-      return msg;
-    }).catch(function (err) {
-      throw err;
-    }).nodeify(cb);
+    }
+
+  // final step
+  ], function (err, msg) {
+    cb(err, msg);
+  });
 };
 
 Updater.prototype.updateMongoDb = function (dbURL, cb) {
