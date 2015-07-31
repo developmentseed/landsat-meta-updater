@@ -1,6 +1,6 @@
 {
   "name": "landsat-meta-updater",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "Downloads landsat metadata and add it to Elastic Search or Mongodb",
   "main": "index.js",
   "scripts": {
@@ -23,13 +23,14 @@
   },
   "homepage": "https://github.com/developmentseed/landsat-meta-updater#readme",
   "dependencies": {
-    "bluebird": "^2.9.27",
+    "async": "^1.4.0",
     "csv": "^0.4.4",
     "date-format": "0.0.2",
     "elasticsearch": "^4.1.0",
     "fs-extra": "^0.18.4",
     "line-by-line": "^0.1.3",
     "lodash": "^3.9.3",
+    "mongoose": "^4.1.0",
     "request": "^2.57.0",
     "request-progress": "^0.3.1"
   },
