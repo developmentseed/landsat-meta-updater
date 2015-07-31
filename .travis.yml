@@ -1,25 +1,20 @@
 language: node_js
-
 node_js:
-    - '0.12'
-
+- '0.12'
 branches:
   only:
   - master
   - develop
-
 services:
-    - elasticsearch
-    - mongodb
-
+- elasticsearch
+- mongodb
 before_script:
-    - sleep 10
-
+- sleep 10
 deploy:
   provider: npm
   email: dev@developmentseed.org
   api_key:
-    secure: KU6UKUe+NUdIsRVn7sAnkGEPjXdSg4k/y2HMQ36AwqeZxbR7TM0AcgLBlavPGYKpzrF0fw/sOBdEl9Xk8phNHJnCyFhAx4/UFgrjo6yh+Tt2VAaD/uzmD4jJ4dg5aHjikxVWIJwUlaCrOx19UVLMgzLVf9Bexfr5/AAX2IrQE7mlGCX/LKgxwwVqPKFXJZYirFMnro0F5ih4dBAARHT6uAWMReQQNSsHaSlQLok0i0ijvMfST8uzWYcU4mFX1Lspz1oVh5goQNQQd+Gr1mrpyHKov7ZAx1+r2BCaxZ7LryKAIW1ZT5X4PpgH4U8NeDE+YPL/N0CHn7kzipT/Ny6VU5I7ZLQ9kVPcsRVnxwq7M1sZB1jsesKtEspYIQuRKaEAX7m5F9kB0XyogufphTydvj627vOdI+fimIGeGFO0YrwORISFSrSO6qGhIDcc4PtxaAadSqHs1wcwQ+RY6AF7rjerBU+ErhVxSVsTC04ZU8OILHNiIKvf3SCaW4+08Z3g4Lk78zCmoiXpLY1KNibzA4IPd5kdmHeFtS59cmiKvfOkePU0GwyOqfsIiwtmIyJciMDeLRy2l9g//U0rVeXrudb3kcWZ+yAXg662exzx8rtp7gtC3oDjZh75LMG+K3Ukyrxrl+q09EzVUkTXWb32n0UrhL3DUix+Eo+sift8wak=
+    secure: EqvMGQehyEY8G4PKeXXKp8HFtV4zm73JKbn32/cZZFWYK78KtQ5GBDBnv777YB8J8HMeq86CjHzQliyfqRtIR6ram6g0cClcgn62YhXwIEIMnldZrv0aI3o/iCIeNqucU19Fh7oBcBEQbePh5Aj1dfgIgLsmeeU8c5e9RHKmQjC6SMsJIFIGc1w7pp6lYj4R1McSTaWAvwCH9GwwfvMt6lmPkuYu52Di65wJYIPeldjXyyzqqZJJmECvzW0pgiVlzL4RXmZIopkesgFJVoxGM3rK5Io0YpElxF1eYpNi8ApKdv04cuCH5T+GvnQBCyFA24go1RqA+MsmyX+XRM9fn+khMIgdvg/PoNXZoOGYU/16U1v43gCNsNmgCbncMqxRiz8zJD3jcCkVXQff+So4m96qKEMnt9r8ys7hrW4KqX5e5ImZNrLXNjOAgF828FTdDeB60QW8qgtsH0Z7ze5QVlMA0S8Om3yUU2AM7m9Kkg2OHmS7TKC9aXEjZuzNmo40BlPwE4SLzF019J/AbI30Vvv9GHwDpN1kqug5JK67aQfoLi0tgQwcPlzYtXVLoNIA2duUPwh2gbBRVmK8tPZl98cXoClfH6hzTkhKgfAa+Jlrm8CO0yERJfB83iKG3m65ZINh4CsuzuG9D5pqtXmYcFCb1i/TwMaplbxDZmBM0lY=
   on:
     repo: developmentseed/landsat-meta-updater
     branch: master
