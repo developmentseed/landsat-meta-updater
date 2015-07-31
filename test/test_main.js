@@ -26,11 +26,9 @@ describe('Test the package with elasticsearch', function () {
 
     // Update Elastic Search
     u.updateEs(function (err, msg) {
-      if (err) {
-        console.log('Error:', err);
-      } else {
-        done();
-      }
+      expect(err).to.be.null;
+      expect(msg).to.equal('\nProcess is complete!');
+      done();
     });
   });
 
@@ -54,7 +52,7 @@ describe('Test the package with elasticsearch', function () {
       done();
     }).catch(function (err) {
       console.log(err);
-      expect(err).to.be.undefined;
+      expect(err).to.be.null;
       done();
     });
   });
@@ -65,7 +63,7 @@ describe('Test the package with elasticsearch', function () {
       done();
     }).catch(function (err) {
       console.log(err);
-      expect(err).to.be.undefined;
+      expect(err).to.be.null;
       done();
     });
   });
