@@ -15,7 +15,7 @@ async.waterfall([
     db.start(callback);
   },
 
-  // Update Elastic Search
+  // Update MongoDB
   function (callback) {
     u.updateMongoDb(dbUrl, callback);
   }
