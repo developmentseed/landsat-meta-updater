@@ -46,7 +46,7 @@ Updater.prototype.download = function (cb) {
       fs.mkdirsSync(self.downloadFolder);
       callback(null);
     },
-    // // Check when was the last time the file was downloaded
+    // Check when was the last time the file was downloaded
     function (callback) {
       fs.stat(self.csvFile, function (err, stats) {
         if (err) {
