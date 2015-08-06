@@ -2,52 +2,28 @@
 
 var _ = require('lodash');
 var LineByLineReader = require('line-by-line');
-var format = require('date-format');
+var moment = require('moment');
 var csv = require('csv');
 var async = require('async');
 var Landsat = require('./model.js');
 
 var skipFields = ['dateUpdated', 'sceneStopTime', 'sceneStartTime', 'acquisitionDate'];
 
-var dateConverter = function (value) {
-  var arr = value.split(':');
-
-  var blank_date = new Date(arr[0], 0);
-  blank_date.setDate(arr[1]);
-  blank_date.setHours(arr[2]);
-  blank_date.setMinutes(arr[3]);
-  blank_date.setMilliseconds(arr[4]);
-  var date = new Date(blank_date);
-
-  return format('yyyy-MM-ddThh:mm:ss.SSS', date);
-};
-
 var landsatMetaObject = function (header, record) {
   var output = {};
-  // output.extras = {};
   var value;
-
-  // Get model fields
-  // var modelHeaders = _.pull(_.keys(Landsat.schema.paths), '_id', '__v');
 
   // Build the landsat object
   for (var j = 0; j < header.length; j++) {
-    if (header[j] === 'sceneStartTime' || header[j] === 'sceneStopTime') {
-      output[header[j]] = dateConverter(record[j]);
-    } else {
-      output[header[j]] = record[j];
-    }
-
     // convert numbers to float
     if (header[j] === 'sceneStartTime' || header[j] === 'sceneStopTime') {
-      value = dateConverter(record[j]);
+      value = moment(record[j], 'YYYY:DDD:HH:mm:SSSS').format();
     } else {
       value = parseFloat(record[j]);
       if (_.isNaN(value) || skipFields.indexOf(header[j]) !== -1) {
         value = record[j];
       }
     }
-
     output[header[j]] = value;
   }
 
@@ -72,9 +48,12 @@ var processBulk = function (header, data, bulk, bulkSize, cb) {
   var added = true;
 
   // Create object and add it to bulk
-  added = true;
-  var meta = landsatMetaObject(header, data);
-  bulk.push(meta);
+  // only if bulk size is less than or equal to bulk size
+  if (bulk.length <= bulkSize) {
+    added = true;
+    var meta = landsatMetaObject(header, data);
+    bulk.push(meta);
+  }
 
   // if bulk object length equal bulksize insert it to mongoDB
   if (bulk.length >= bulkSize) {
@@ -136,8 +115,6 @@ module.exports.toMongoDb = function (filename, bulkSize, cb) {
     rstream.pause();
 
     // Keep last line
-    lastLine = line;
-
     async.waterfall([
       // Parse the CSV
       function (callback) {
@@ -154,6 +131,7 @@ module.exports.toMongoDb = function (filename, bulkSize, cb) {
 
           // The rest is data
           } else {
+            lastLine = line;
             total++;
 
             // Do bulk upload if bulksize is provided
@@ -189,7 +167,7 @@ module.exports.toMongoDb = function (filename, bulkSize, cb) {
   rstream.on('end', function () {
     // Process the remaining items in bulk if any
     if (bulk.length > 0) {
-      processBulk(header, lastLine, bulk, bulk.length + 1, function () {
+      processBulk(header, lastLine, bulk, bulk.length - 1, function () {
         cb(null, '\nProcess is complete!');
       });
     } else {
