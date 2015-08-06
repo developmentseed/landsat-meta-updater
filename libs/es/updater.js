@@ -2,26 +2,13 @@
 
 var _ = require('lodash');
 var csv = require('csv');
+var moment = require('moment');
 var LineByLineReader = require('line-by-line');
-var format = require('date-format');
 var async = require('async');
 var client = require('../connections.js').elasticsearch;
 
 // Global variables
 var skipFields = ['dateUpdated', 'sceneStopTime', 'sceneStartTime', 'acquisitionDate'];
-
-var dateConverter = function (value) {
-  var arr = value.split(':');
-
-  var blank_date = new Date(arr[0], 0);
-  blank_date.setDate(arr[1]);
-  blank_date.setHours(arr[2]);
-  blank_date.setMinutes(arr[3]);
-  blank_date.setMilliseconds(arr[4]);
-  var date = new Date(blank_date);
-
-  return format('yyyy-MM-ddThh:mm:ss.SSS', date);
-};
 
 var landsatMetaObject = function (header, record) {
   var output = {};
@@ -30,7 +17,11 @@ var landsatMetaObject = function (header, record) {
   for (var j = 0; j < header.length; j++) {
     // convert numbers to float
     if (header[j] === 'sceneStartTime' || header[j] === 'sceneStopTime') {
-      value = dateConverter(record[j]);
+      value = moment(record[j], 'YYYY:DDD:HH:mm:SSSS').format();
+    } else if (header[j] === 'acquisitionDate' || header[j] === 'dateUpdated') {
+      value = moment(record[j], 'YYYY-MM-DD').format();
+    } else if (header[j] === 'row' || header[j] === 'path') {
+      value = parseInt(record[j], 10);
     } else {
       value = parseFloat(record[j]);
       if (_.isNaN(value) || skipFields.indexOf(header[j]) !== -1) {
@@ -175,7 +166,7 @@ var processCsv = function (filename, esIndex, esType, bulkSize, callback) {
   var counter = 0;
   var skipped = 0;
   var added = 0;
-  var header = null;
+  var header = false;
   var lastLine;
   var bulk = [];
 
@@ -239,10 +230,11 @@ var processCsv = function (filename, esIndex, esType, bulkSize, callback) {
 
             // end the water fall
             callback(true);
+          } else {
+            counter++;
+            lastLine = data;
+            callback(null, data);
           }
-          counter++;
-          lastLine = data;
-          callback(null, data);
         });
       },
 
