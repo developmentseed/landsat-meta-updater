@@ -6,7 +6,7 @@ var async = require('async');
 
 var u = new Updater('landsat', '8', 1000);
 
-var dbUrl = 'mongodb://localhost/landsat-new';
+var dbUrl = 'mongodb://localhost/landsat-api' || process.env.DBURL;
 
 async.waterfall([
   // Connect to MongoDb
