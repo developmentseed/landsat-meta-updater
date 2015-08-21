@@ -6,6 +6,7 @@ var moment = require('moment');
 var csv = require('csv');
 var async = require('async');
 var Landsat = require('./model.js');
+var country = require('../shared.js').country;
 
 var skipFields = ['dateUpdated', 'sceneStopTime', 'sceneStartTime', 'acquisitionDate'];
 
@@ -26,6 +27,8 @@ var landsatMetaObject = function (header, record) {
     }
     output[header[j]] = value;
   }
+
+  output.countries = country(output.row, output.path);
 
   // Create bounding box geojson
   output.boundingBox = {
