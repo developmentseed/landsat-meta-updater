@@ -99,6 +99,7 @@ var landsatSchema = new mongoose.Schema({
     PRESENT_BAND_7: String,
     PRESENT_BAND_8: String,
     NADIR_OFFNADIR: String,
+    countries: mongoose.Schema.Types.Mixed,
     boundingBox: {type: mongoose.Schema.Types.Mixed, index: '2dsphere'}
 });
 

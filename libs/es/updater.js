@@ -6,6 +6,8 @@ var moment = require('moment');
 var LineByLineReader = require('line-by-line');
 var async = require('async');
 var client = require('../connections.js').elasticsearch;
+var prs = require('../pathsRows.json');
+var normalizer = require('../shared.js').pathNormalizer;
 
 // Global variables
 var skipFields = ['dateUpdated', 'sceneStopTime', 'sceneStartTime', 'acquisitionDate'];
@@ -31,6 +33,8 @@ var landsatMetaObject = function (header, record) {
 
     output[header[j]] = value;
   }
+
+  output.countries = prs[normalizer(output.path) + normalizer(output.row)];
 
   // Create bounding box
   output.boundingBox = {
