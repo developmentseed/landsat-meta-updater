@@ -14,7 +14,7 @@ var landsatSchema = new mongoose.Schema({
     cloudCoverFull: {type: Number, index: true},
     sceneStartTime: {type: Date, index: true},
     sceneStopTime: {type: Date, index: true},
-    acquisitionString: {type: Date, index: true},
+    acquisitionDate: {type: Date, index: true},
     browseAvailable: String,
     browseURL: String,
     upperLeftCornerLatitude: Number,
@@ -102,5 +102,11 @@ var landsatSchema = new mongoose.Schema({
     countries: mongoose.Schema.Types.Mixed,
     boundingBox: {type: mongoose.Schema.Types.Mixed, index: '2dsphere'}
 });
+
+landsatSchema.index({sceneCenterLatitude: 1, sceneCenterLongitude: 1});
+landsatSchema.index({acquisitionDate: 1, sceneCenterLatitude: 1, sceneCenterLongitude: 1});
+landsatSchema.index({dayOrNight: 1, acquisitionDate: 1, cloudCoverFull: 1,
+                     sceneCenterLatitude: 1, sceneCenterLongitude: 1});
+landsatSchema.index({acquisitionDate: 1, cloudCoverFull: 1, sceneCenterLatitude: 1, sceneCenterLongitude: 1});
 
 module.exports = mongoose.model('landsat', landsatSchema);
