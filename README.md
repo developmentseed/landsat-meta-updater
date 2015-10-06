@@ -2,6 +2,7 @@
 
 [![npm version](https://badge.fury.io/js/landsat-meta-updater.svg)](http://badge.fury.io/js/landsat-meta-updater)
 [![Build Status](https://travis-ci.org/developmentseed/landsat-meta-updater.svg?branch=master)](https://travis-ci.org/developmentseed/landsat-meta-updater)
+[![on docker](https://img.shields.io/badge/docker-available-green.svg)](https://hub.docker.com/r/developmentseed/landsat-meta-updater/)
 
 A downloader for landsat metadata with auto update for Elasticsearch or MongoDB.
 
