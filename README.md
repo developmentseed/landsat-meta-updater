@@ -5,6 +5,10 @@
 
 A downloader for landsat metadata with auto update for Elasticsearch or MongoDB.
 
+### Docker installation
+
+    $ docker run --name updater -e DBURL=mongodb://linktomongo/landsat-api developmentseed/landsat-meta-updater:latest
+
 ### Requirements
 
 - Elastic Search 1.6+ if used with Elastic Search
