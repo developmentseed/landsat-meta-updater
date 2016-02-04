@@ -1,6 +1,6 @@
 {
   "name": "landsat-meta-updater",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "Downloads landsat metadata and add it to Elastic Search or Mongodb",
   "main": "index.js",
   "scripts": {
