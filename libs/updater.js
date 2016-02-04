@@ -27,14 +27,14 @@ var downloadCsv = function (url, path, callback) {
     var size = Math.floor(state.received / Math.pow(1024, 2)).toFixed(2);
     process.stdout.write('Received size:              ' + size + 'MB \r');
   })
-  .pipe(fs.createWriteStream(path))
   .on('error', function (err) {
     callback(err);
   })
   .on('close', function () {
     console.log('\n Download Completed!');
     callback(null);
-  });
+  })
+  .pipe(fs.createWriteStream(path));
 };
 
 Updater.prototype.download = function (cb) {
