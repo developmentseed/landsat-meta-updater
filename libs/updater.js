@@ -21,16 +21,16 @@ var Updater = function (esIndex, esType, bulkSize, downloadFolder) {
 // Downloads the url to the given path
 var downloadCsv = function (url, path, callback) {
   progress(request(url), {
-      delay: 1000      // Only start to emit after 1000ms delay
+    delay: 1000      // Only start to emit after 1000ms delay
   })
   .on('progress', function (state) {
     var size = Math.floor(state.received / Math.pow(1024, 2)).toFixed(2);
     process.stdout.write('Received size:              ' + size + 'MB \r');
   })
-  .on('error', function (err) {
+  .once('error', function (err) {
     callback(err);
   })
-  .on('close', function () {
+  .once('end', function () {
     console.log('\n Download Completed!');
     callback(null);
   })
