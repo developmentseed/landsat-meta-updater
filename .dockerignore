@@ -1,0 +1,12 @@
+node_modules
+.DS_Store
+.*.swp
+*.log
+*.pyc
+dist
+.env
+docs_tmp
+.git
+download
+sample.js
+Dockerfile

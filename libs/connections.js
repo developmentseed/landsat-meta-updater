@@ -4,13 +4,18 @@ var elasticsearch = require('elasticsearch');
 var mongoose = require('mongoose');
 var _ = require('lodash');
 
-// Connection to Elastic Search
-module.exports.elasticsearch = new elasticsearch.Client({
-  host: process.env.ES_HOST || 'localhost:9200',
+// Connection to Elastic Search, wrapped in try/catch to prevent downstream errors
+try {
+  module.exports.elasticsearch = new elasticsearch.Client({
+    host: process.env.ES_HOST || 'localhost:9200',
 
-  // Note that this doesn't abort the query.
-  requestTimeout: process.env.ES_TIMEOUT || 50000  // milliseconds
-});
+    // Note that this doesn't abort the query.
+    requestTimeout: process.env.ES_TIMEOUT || 50000  // milliseconds
+  });
+} catch (e) {
+  console.error(e);
+  module.exports.elasticsearch = undefined;
+}
 
 // Connection to MongoDB
 var Mongodb = function (dbName, dbUri) {
