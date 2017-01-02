@@ -19,8 +19,8 @@ describe('Elastic Search', function () {
     it('run', function (done) {
       var csv = fs.readFileSync(__dirname + '/test.csv', {encoding: 'utf8'});
 
-      nock('http://landsat.usgs.gov')
-        .get('/metadata_service/bulk_metadata_files/LANDSAT_8.csv')
+      nock('https://landsat.usgs.gov')
+        .get('/landsat/metadata_service/bulk_metadata_files/LANDSAT_8.csv')
         .reply(200, csv);
 
       var u = new Updater(testIndex, testType, 5, downloadDir);
@@ -79,8 +79,8 @@ describe('Elastic Search', function () {
     it('run', function (done) {
       var csv = fs.readFileSync(__dirname + '/test.csv', {encoding: 'utf8'});
 
-      nock('http://landsat.usgs.gov')
-        .get('/metadata_service/bulk_metadata_files/LANDSAT_8.csv')
+      nock('https://landsat.usgs.gov')
+        .get('/landsat/metadata_service/bulk_metadata_files/LANDSAT_8.csv')
         .reply(200, csv);
 
       var u = new Updater(testIndex, testType, null, downloadDir);
@@ -149,8 +149,8 @@ describe('MongoDB', function () {
     it('add records', function (done) {
       var csv = fs.readFileSync(__dirname + '/test.csv', {encoding: 'utf8'});
 
-      nock('http://landsat.usgs.gov')
-        .get('/metadata_service/bulk_metadata_files/LANDSAT_8.csv')
+      nock('https://landsat.usgs.gov')
+        .get('/landsat/metadata_service/bulk_metadata_files/LANDSAT_8.csv')
         .reply(200, csv);
 
       var u = new Updater(testIndex, testType, 5, downloadDir);
@@ -225,8 +225,8 @@ describe('MongoDB', function () {
     it('add records', function (done) {
       var csv = fs.readFileSync(__dirname + '/test.csv', {encoding: 'utf8'});
 
-      nock('http://landsat.usgs.gov')
-        .get('/metadata_service/bulk_metadata_files/LANDSAT_8.csv')
+      nock('https://landsat.usgs.gov')
+        .get('/landsat/metadata_service/bulk_metadata_files/LANDSAT_8.csv')
         .reply(200, csv);
 
       var u = new Updater(testIndex, testType, null, downloadDir);
