@@ -10,7 +10,7 @@ var mongoUpdater = require('./mongo/updater.js');
 
 var Updater = function (esIndex, esType, bulkSize, downloadFolder) {
   // Globals
-  this.url = 'https://landsat.usgs.gov/landsat/metadata_service/bulk_metadata_files/LANDSAT_8.csv';
+  this.url = 'https://landsat.usgs.gov/landsat/metadata_service/bulk_metadata_files/LANDSAT_8_C1.csv';
   this.downloadFolder = downloadFolder || join(__dirname, 'download');
   this.csvFile = join(this.downloadFolder, 'landsat.csv');
   this.esIndex = esIndex;
