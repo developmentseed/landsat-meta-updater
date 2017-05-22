@@ -3,7 +3,14 @@
 var mongoose = require('mongoose');
 
 var landsatSchema = new mongoose.Schema({
-    sceneID: {type: String, unique: true, required: true, dropDups: true },
+    // added after introducing Collection-1
+    LANDSAT_PRODUCT_ID: {type: String, unique: true, required: true, dropDups: true},
+    COLLECTION_NUMBER: Number,
+    COLLECTION_CATEGORY: {type: String, index: true},
+    CLOUD_COVER_LAND: {type: Number, index: true},
+
+    // pre-collection
+    sceneID: {type: String, unique: true, required: true, dropDups: true},
     sensor: String,
     receivingStation: String,
     dayOrNight: {type: String, index: true},
